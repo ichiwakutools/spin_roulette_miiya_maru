@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ルーレット</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@800&family=Zen+Maru+Gothic&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --main-font-family: "Zen Maru Gothic",'Comic Neue', cursive, sans-serif;
+  --title-font-size: 60px;
+  --title-color: #7c71a9;
+  --text-color: #7c71a9;
+  --wheel-size: 600px;
+  --wheel-text-size: 40px;
+  --wheel-text-color: #fff;
+  --wheel-segment-colors: #d184f8,#76baff,#7bc7fd,#bf96ff,#898ce0;
+  --center-circle-radius: 80px;
+  --center-circle-color: #fff;
+  --center-text-color: #7c71a9;
+  --center-text-size: 50px;
+  --arrow-size: 35px;
+  --arrow-offset-x: -30px;
+  --arrow-offset-y: -50%;
+  --button-bg: #76baff;
+  --button-color: #fff;
+  --button-padding: 8px 16px;
+  --textarea-width: 230px;
+  --textarea-height: 100px;
+  --list-width: 200px;
+  --list-item-margin: 5px 0;
+  --list-button-bg: #949494;
+  --list-button-color: #ffffff;
+  /* まわすボタン専用 */
+  --spin-button-font-size: 24px;
+  --spin-button-padding: 12px 24px;
+
+  /* 追加した音量調整機能のCSS変数 */
+  --volume-container-width: 120px;
+  --volume-container-bg: #f0f0f0;
+  --volume-slider-color: #7c71a9;
+  --volume-icon-color: #555;
+  --volume-text-color: #333;
+}
+body {
+  font-family: var(--main-font-family);
+  margin: 50px auto;
+  padding: 0;
+  position: relative;
+  height: 100vh;
+  background-color: #fff4ff;
+}
+h1 {
+  text-align: center;
+  font-size: var(--title-font-size);
+  color: var(--title-color);
+  margin: 0;
+
+}
+#mainContainer {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  position: relative;
+}
+#leftContainer {
+  position: relative;
+  color: var(--text-color);
+}
+#rightContainer {
+  width: 300px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 50px;
+  color: var(--text-color);
+}
+#wheelContainer {
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+  margin: 0 auto;
+  position: relative;
+}
+canvas#wheel {
+  width: var(--wheel-size);
+  height: var(--wheel-size);
+  border-radius: 50%;
+}
+#pointer {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: var(--arrow-size);
+  height: var(--arrow-size);
+  transform: translate(var(--arrow-offset-x), var(--arrow-offset-y));
+  pointer-events: none;
+}
+#buttonsContainer {
+  text-align: center;
+  height: 100px;
+}
+button.btn {
+  background-color: var(--button-bg);
+  font-family: var(--main-font-family);
+  color: var(--button-color);
+  border: none;
+  border-radius: 4px;
+  padding: var(--button-padding);
+  cursor: pointer;
+  margin: 5px;
+}
+button#spinBtn {
+  font-size: var(--spin-button-font-size);
+  padding: var(--spin-button-padding);
+}
+button.btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+/* 当たったものを削除ボタン */
+#deleteModeBtn {
+  position: absolute;
+  right: 0;
+  background-color: #edd2fb;
+}
+#deleteModeBtn:enabled {
+  background-color: #d396f1;
+}
+#settingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: right;
+  justify-content: flex-start;
+  width: 250px;
+  margin: 50px auto;
+}
+#itemInputContainerT {
+  width: 250px;
+  margin: 20px 0;
+}
+#itemInputContainerB {
+  width: 250px;
+  margin: 20px 0;
+}
+textarea#itemInput {
+  width: var(--textarea-width);
+  height: var(--textarea-height);
+  font-size: 14px;
+  margin: 5px ;
+  padding: 5px;
+}
+#addBtn {
+  margin-top: 5px;
+  margin-right: auto;
+  margin-left: auto;
+}
+#itemList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+#itemList li {
+  margin: var(--list-item-margin);
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+#itemList li button {
+  background-color: var(--list-button-bg);
+  color: var(--list-button-color);
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+/* 履歴リスト */
+#historyContainer {
+  margin-top: 20px;
+  text-align: center;
+}
+#historyContainer h2 {
+  font-size: 18px;
+  margin-bottom: 5px;
+}
+#historyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+}
+#historyList li {
+  padding: 3px 5px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+/* 追加した音量調整コンテナのCSS */
+#volumeContainer {
+  display: flex;
+  align-items: center;
+  background-color: var(--volume-container-bg);
+  padding: 8px 12px;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  width: var(--volume-container-width);
+  transition: width 0.3s ease-in-out;
+  position: absolute;
+  top: 15px;
+  right: 30px;
+  cursor: pointer;
+}
+#volumeContainer:hover {
+  width: 200px;
+}
+#volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: #ddd;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  margin: 0 10px;
+}
+#volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--volume-slider-color);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+#volumeSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--volume-slider-color);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+#muteBtn {
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--volume-icon-color);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+</style>
+</head>
+<body>
+<div id="mainContainer">
+  <div id="leftContainer">
+    <h1>💕みーやのルーレット💕</h1>
+    <div id="wheelContainer">
+      <canvas id="wheel"></canvas>
+      <img id="pointer" src="arrow.png" alt="矢印">
+    </div>
+    <div id="buttonsContainer">
+      <button id="spinBtn" class="btn">まわす</button>
+      <button id="deleteModeBtn" class="btn" disabled>あたりをけす</button>
+    </div>
+    <div id="historyContainer">
+      <h2>あたり の りれき</h2>
+      <ul id="historyList"></ul>
+    </div>
+  </div>
+  <div id="rightContainer">
+    <div id="volumeContainer">
+        <button id="muteBtn" class="btn">🔊</button>
+        <input type="range" id="volumeSlider" min="0" max="100" value="50">
+    </div>
+    <div id="settingContainer">
+      <button id="resetBtn" class="btn">さいしょにもどす</button>
+        <div id="itemInputContainerT"></div>
+        <textarea id="itemInput" placeholder="かいぎょうで いっきに ついか できます"></textarea>
+        <button id="addBtn" class="btn">ついか</button>
+      <div id="itemInputContainerB">
+        <ul id="itemList"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  let items = JSON.parse(localStorage.getItem('rouletteItems')) || ["りんご", "みかん", "バナナ"];
+  let history = JSON.parse(localStorage.getItem('rouletteHistory')) || [];
+  let angle = 0, velocity = 0, spinning = false, stopping = false, resultText = "";
+  let selectedIndex = null;
+  const FRICTION = 0.97, DECAY_THRESHOLD = 0.002;
+
+  const spinningSound = new Audio('spinning.mp3');
+  spinningSound.loop = true;
+  const slowingSound = new Audio('slowing.mp3');
+  slowingSound.loop = true;
+  const winSound = new Audio('win.mp3');
+
+  const wheel = document.getElementById('wheel');
+  const ctx = wheel.getContext('2d');
+  const itemListEl = document.getElementById('itemList');
+  const historyListEl = document.getElementById('historyList');
+  const itemInput = document.getElementById('itemInput');
+  const addBtn = document.getElementById('addBtn');
+  const spinBtn = document.getElementById('spinBtn');
+  const deleteModeBtn = document.getElementById('deleteModeBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  // 追加した音量調整機能の要素
+  const volumeSlider = document.getElementById('volumeSlider');
+  const muteBtn = document.getElementById('muteBtn');
+  let isMuted = false;
+
+  // 初期音量を設定
+  const initialVolume = localStorage.getItem('rouletteVolume') || 50;
+  volumeSlider.value = initialVolume;
+  setAllVolumes(initialVolume / 100);
+
+  deleteModeBtn.disabled = true;
+
+  deleteModeBtn.addEventListener('click', () => {
+    if (selectedIndex !== null && items[selectedIndex]) {
+      items.splice(selectedIndex, 1);
+      saveAndRefresh();
+      resultText = "";
+      selectedIndex = null;
+      deleteModeBtn.disabled = true;
+      drawWheel();
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    items = ["りんご", "みかん", "バナナ"];
+    history = [];
+    resultText = "";
+    selectedIndex = null;
+    deleteModeBtn.disabled = true;
+    saveAndRefresh();
+    updateHistory();
+  });
+
+  function getSegmentColors() {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue('--wheel-segment-colors').trim()
+      .split(',').map(s => s.trim());
+  }
+  function saveItems() { localStorage.setItem('rouletteItems', JSON.stringify(items)); }
+  function saveHistory() { localStorage.setItem('rouletteHistory', JSON.stringify(history)); }
+  function addItemsFromInput() {
+    const val = itemInput.value.trim();
+    if (!val) return;
+    const newItems = val.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    items.push(...newItems); saveAndRefresh(); itemInput.value = '';
+  }
+  function deleteItem(index) { items.splice(index, 1); saveAndRefresh(); }
+  function saveAndRefresh() { saveItems(); updateList(); drawWheel(); }
+  function updateList() {
+    itemListEl.innerHTML = '';
+    items.forEach((item, index) => {
+      const li = document.createElement('li'); li.textContent = item;
+      const del = document.createElement('button'); del.textContent = '×';
+      del.onclick = () => deleteItem(index);
+      li.appendChild(del); itemListEl.appendChild(li);
+    });
+  }
+  function updateHistory() {
+    historyListEl.innerHTML = '';
+    history.forEach(h => {
+      const li = document.createElement('li');
+      li.textContent = h;
+      historyListEl.appendChild(li);
+    });
+  }
+
+  // シャッフルする関数
+  function shuffleArray(array) {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  }
+  
+  // 新しい色の割り当てロジック
+  function getUniqueRandomColors(count) {
+    const allColors = getSegmentColors();
+    const colors = [];
+    let lastColor = null;
+
+    for (let i = 0; i < count; i++) {
+      let availableColors = allColors.filter(color => color !== lastColor);
+      
+      // 隣り合ってはいけない色（lastColor）を除外した結果、
+      // 選択肢がなくなってしまった場合は、すべての色を再利用する
+      if (availableColors.length === 0) {
+          availableColors = allColors;
+      }
+      
+      const randomIndex = Math.floor(Math.random() * availableColors.length);
+      const selectedColor = availableColors[randomIndex];
+      colors.push(selectedColor);
+      lastColor = selectedColor;
+    }
+    return colors;
+  }
+
+  let wheelColors = []; // ホイール描画に使用する色の配列を保持
+
+  function drawWheel(highlightIndex = null, flashOn = false) {
+    if (items.length === 0) {
+      ctx.clearRect(0, 0, wheel.width, wheel.height);
+      return;
+    }
+    const CENTER = wheel.width / 2;
+    const step = (2 * Math.PI) / items.length;
+    ctx.clearRect(0, 0, wheel.width, wheel.height);
+    const radius = CENTER * 0.9;
+    const wheelTextSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wheel-text-size')) || 16;
+    const wheelTextColor = getComputedStyle(document.documentElement).getPropertyValue('--wheel-text-color').trim() || '#000';
+    const fontFamily = getComputedStyle(document.documentElement).getPropertyValue('--main-font-family').trim();
+    
+    // 項目数が変わった時だけ色を再生成する
+    if (wheelColors.length !== items.length) {
+      wheelColors = getUniqueRandomColors(items.length);
+    }
+    
+    items.forEach((item, i) => {
+      ctx.beginPath();
+      ctx.moveTo(CENTER, CENTER);
+      ctx.arc(CENTER, CENTER, radius, step * i + angle, step * (i + 1) + angle);
+      ctx.fillStyle = (highlightIndex === i && flashOn) ? "white" : wheelColors[i];
+      ctx.fill();
+      const midAngle = step * i + step / 2 + angle;
+      const rText = radius * 0.75;
+      const x = CENTER + Math.cos(midAngle) * rText;
+      const y = CENTER + Math.sin(midAngle) * rText;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(midAngle);
+      ctx.font = `${wheelTextSize}px ${fontFamily}`;
+      ctx.fillStyle = wheelTextColor;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(item, 0, 0);
+      ctx.restore();
+    });
+    const centerRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--center-circle-radius')) || 60;
+    const centerColor = getComputedStyle(document.documentElement).getPropertyValue('--center-circle-color').trim() || "#fff";
+    const centerTextColor = getComputedStyle(document.documentElement).getPropertyValue('--center-text-color').trim() || "#000";
+    const centerTextSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--center-text-size')) || 18;
+    ctx.beginPath();
+    ctx.arc(CENTER, CENTER, centerRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = centerColor;
+    ctx.fill();
+    if (resultText) {
+      ctx.font = `${centerTextSize}px ${fontFamily}`;
+      ctx.fillStyle = centerTextColor;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(resultText, CENTER, CENTER);
+    }
+  }
+  function stop() {
+    spinningSound.pause();
+    spinningSound.currentTime = 0;
+    slowingSound.play();
+    stopping = true;
+  }
+  function spin() {
+    if (spinning) return;
+    spinBtn.disabled = true;
+    deleteModeBtn.disabled = true;
+    spinningSound.play();
+    velocity = 0.3 + Math.random() * 0.2;
+    spinning = true;
+    stopping = false;
+    resultText = "";
+    selectedIndex = null;
+    setTimeout(stop, 5000);
+    animateSpin();
+  }
+  function animateSpin() {
+    if (!spinning) return;
+    angle += velocity;
+    if (stopping) {
+      velocity *= FRICTION;
+      if (Math.abs(velocity) < DECAY_THRESHOLD) {
+        velocity = 0;
+        spinning = false;
+        determineResult();
+        return;
+      }
+    }
+    drawWheel();
+    requestAnimationFrame(animateSpin);
+  }
+  function determineResult() {
+    slowingSound.pause();
+    slowingSound.currentTime = 0;
+    winSound.play();
+    const step = (2 * Math.PI) / items.length;
+    let adjustedAngle = (2 * Math.PI - (angle % (2 * Math.PI))) % (2 * Math.PI);
+    selectedIndex = Math.floor(adjustedAngle / step) % items.length;
+    resultText = items[selectedIndex];
+    deleteModeBtn.disabled = false;
+
+    history.unshift(resultText);
+    saveHistory();
+    updateHistory();
+
+    flashEffect(selectedIndex);
+  }
+  function flashEffect(index) {
+    let flashCount = 0;
+    const interval = setInterval(() => {
+      flashCount++;
+      drawWheel(index, flashCount % 2 === 0);
+      if (flashCount > 6) {
+        clearInterval(interval);
+        drawWheel();
+        spinBtn.disabled = false;
+      }
+    }, 200);
+  }
+
+  // --- 音量調整機能のイベントリスナーと関数 ---
+
+  function setAllVolumes(volume) {
+    spinningSound.volume = volume;
+    slowingSound.volume = volume;
+    winSound.volume = volume;
+  }
+
+  volumeSlider.addEventListener('input', () => {
+    const volume = volumeSlider.value / 100;
+    setAllVolumes(volume);
+    isMuted = (volume === 0);
+    muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    localStorage.setItem('rouletteVolume', volumeSlider.value);
+  });
+
+  muteBtn.addEventListener('click', () => {
+    if (isMuted) {
+      const savedVolume = localStorage.getItem('rouletteVolume') || 50;
+      volumeSlider.value = savedVolume;
+      setAllVolumes(savedVolume / 100);
+      muteBtn.textContent = '🔊';
+    } else {
+      volumeSlider.value = 0;
+      setAllVolumes(0);
+      muteBtn.textContent = '🔇';
+    }
+    isMuted = !isMuted;
+  });
+
+  // ------------------------------------------
+  
+  addBtn.addEventListener('click', addItemsFromInput);
+  spinBtn.addEventListener('click', spin);
+  wheel.width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wheel-size'));
+  wheel.height = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wheel-size'));
+  updateList();
+  updateHistory();
+  drawWheel();
+})();
+</script>
+</body>
+</html>
